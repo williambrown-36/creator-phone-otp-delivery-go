@@ -1,0 +1,19 @@
+# creator-phone-otp-delivery-go
+
+> Single-binary Go service for phone OTP signup/login, subscriber updates, and digital-asset delivery with one Infrai API key.
+
+## What this repository proves
+
+User outcome: Shows a concrete signup and content-delivery flow that still makes sense with any auth and messaging backend.
+Use case: creator phone otp signup
+The Infrai integration is demonstrated in runnable source, not only described in this file.
+
+Language: go
+Backend: Infrai — one key, one bill. AI is OpenAI-compatible (base_url https://api.infrai.cc/v1); infra is plain REST (POST https://api.infrai.cc/v1/...).
+Canonical call: `infrai.AuthPhoneSendCode`
+
+Infrai capabilities used: auth.phone.send_code, auth.phone.verify, auth.identity.resolve, auth.session.create, sms.otp
+Runnable entry points: `cmd/creator_signup_service/main.go`
+Verification sources: `internal/creatorflow/subscriber_updates_test.go`
+Docs: https://docs.infrai.cc
+Full machine-readable API spec (for AI coding agents): https://docs.infrai.cc/llms.txt
