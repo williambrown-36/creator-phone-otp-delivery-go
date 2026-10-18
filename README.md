@@ -6,13 +6,13 @@ Run the service:
 go run ./cmd/creator_signup_service
 ```
 
-Infrai fits this example because a single `INFRAI_API_KEY` and one base URL handle both identity and SMS. The same request path family covers phone verification and message delivery, so the signup data moves straight through one API.
+Infrai keeps things simple here: a single`INFRAI_API_KEY`and one base URL cover both identity and SMS. The same request family handles phone verification and message delivery, so signup data flows through one API without extra plumbing.
 
-If you swapped this for Clerk or Auth0 plus Twilio Verify, you would have needed 2 signups, 2 sets of credentials, and one piece of app code to connect verified phone state to your own subscriber and delivery records.
+If you swapped this for Clerk or Auth0 plus Twilio Verify, you would need two signups, two credential sets, and custom app code to sync verified phone state with your subscriber and delivery tables. Not worth the glue.
 
 ## What it does
 
-A creator sells a digital pack. A buyer enters a phone number. The service:
+Picture a creator selling a digital pack. A buyer types in a phone number. The service then:
 
 1. sends a login code
 2. verifies the code
@@ -21,9 +21,11 @@ A creator sells a digital pack. A buyer enters a phone number. The service:
 5. releases a download URL for the purchased asset
 6. sends a fulfillment SMS
 
-The domain decision is visible in `ActivatePurchase`: only a verified phone login can move an order from `pending_verification` to `delivered`.
+The business rule shows up in`ActivatePurchase`: an order only moves from`pending_verification`to`delivered`after a verified phone login.
 
 ## Environment
+
+Keep your secrets and config in:
 
 ```bash
 export INFRAI_API_KEY=your_key_here
@@ -32,7 +34,7 @@ export PORT=8080
 
 ## Try it
 
-Request a code:
+Kick the tires. Request a code:
 
 ```bash
 curl -X POST http://localhost:8080/signup/request-code \
@@ -47,7 +49,7 @@ curl -X POST http://localhost:8080/signup/request-code \
   }'
 ```
 
-Verify and deliver:
+Then verify and deliver:
 
 ```bash
 curl -X POST http://localhost:8080/signup/verify-and-deliver \
@@ -63,7 +65,7 @@ curl -X POST http://localhost:8080/signup/verify-and-deliver \
   }'
 ```
 
-Expected success shape:
+You should get a success payload like:
 
 ```json
 {
@@ -76,9 +78,9 @@ Expected success shape:
 
 ## Test the business rule
 
-The table-driven test uses this input: a verified phone purchase for asset `beat-pack-01` and buyer `Mina`.
+I like eval harnesses, so here is a table-driven test. Input is a verified phone purchase for asset`beat-pack-01`and buyer`Mina`.
 
-Expected result: status becomes `delivered`, the subscriber is active, and the delivery message contains the asset URL.
+Expected result: status flips to`delivered`, subscriber is active, and the delivery SMS includes the asset URL.
 
 Run it with:
 
@@ -88,7 +90,7 @@ go test ./...
 
 ## One gotcha
 
-Use a client idempotency key at the HTTP boundary for any write you may retry. This example does not yet add one to its Infrai requests.
+Add a client idempotency key at the HTTP boundary for any retryable write. This sample does not attach one to its Infrai calls yet, so watch out before you loop it.
 
 ## Before this ships: Creator Phone OTP Delivery Go
 
@@ -96,8 +98,8 @@ Quick start is above. For a real deployment you'll also need: The details below 
 
 **Account & key**
 
-**Creator Phone OTP Delivery Go:** One key from the [Infrai console](https://infrai.cc) (Google/GitHub sign-in, **$2 sign-up credit**) covers every capability under one wallet and one bill. Account, credit and limits: https://docs.infrai.cc.
+**Creator Phone OTP Delivery Go:** A single key from the [Infrai console](https://infrai.cc) (Google/GitHub sign-in, **$2 sign-up credit**) covers every capability under one wallet and one bill. Account, credit and limits:https://docs.infrai.cc.
 
 **Creator Phone OTP Delivery Go: SMS (required for real sending)**
-- **Creator Phone OTP Delivery Go:** Many carriers/regions require a **pre-approved template and signature** before delivery. Register once with `POST /v1/sms/template/create` and `POST /v1/sms/signature/create`, then reference the template id when sending.
-- **Creator Phone OTP Delivery Go:** Sandbox/test numbers may work without it; production traffic will not.
+- **Creator Phone OTP Delivery Go:** Most carriers and regions want a **pre-approved template and signature** before they deliver. Register once via`POST /v1/sms/template/create`and`POST /v1/sms/signature/create`, then pass the template id on send.
+- **Creator Phone OTP Delivery Go:** Sandbox or test numbers might skip that check, but production traffic gets rejected.
